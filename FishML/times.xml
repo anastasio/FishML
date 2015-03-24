@@ -1,0 +1,3 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<times WriteEvery="1" ReadEvery="720" DataFolderWrite="C:\Datafolder\itemstock.xml" DataFolderRead="C:\Datafolder\items_rss.xml">	
+</times>

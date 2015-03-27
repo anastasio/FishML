@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -25,8 +26,15 @@ namespace FishML {
         int writeMinutesToGo;
         int writeHoursToGo;
         int writeSecsToGo;
+        System.Windows.Forms.Timer tmrRead;
+        System.Windows.Forms.Timer tmrReadCount;
+        System.Windows.Forms.Timer tmrWrite;
+        System.Windows.Forms.Timer tmrWriteCount;
         public Form1() {
+            
             InitializeComponent();
+            btn1.Enabled = false;
+            btn2.Enabled = false;
             myData = myData.Load();
             BuildConnectionString();
             myTimes = myTimes.Load();
@@ -34,7 +42,7 @@ namespace FishML {
             if ( readHoursToGo == 0 ) {
                 readMinutesToGo = myTimes.ReadEvery;
             }
-            System.Windows.Forms.Timer tmrReadCount = new System.Windows.Forms.Timer();
+            tmrReadCount = new System.Windows.Forms.Timer();
             tmrReadCount.Interval = 1000;
             tmrReadCount.Tick += ( s, e ) => {
                 readSecsToGo--;
@@ -54,24 +62,10 @@ namespace FishML {
             };
             tmrReadCount.Start();
 
-            System.Windows.Forms.Timer tmrRead = new System.Windows.Forms.Timer();
+            tmrRead = new System.Windows.Forms.Timer();
             tmrRead.Interval =   myTimes.ReadEvery * 60 * 1000;
             tmrRead.Tick += ( s, e ) => {
-                try {
-                    tmrReadCount.Stop();
-                    tmrRead.Stop();
-                    lblReadFile.Text = "Reading File";
-                    ReadXMLFile( myTimes.DataFolderRead );
-                } finally {                    
-                    readMinutesToGo = 0;
-                    readHoursToGo = (int)myTimes.ReadEvery / 60;
-                    if ( readHoursToGo == 0 ) {
-                        readMinutesToGo = myTimes.ReadEvery;
-                    }
-                    readSecsToGo = 0;
-                    tmrRead.Start();
-                    tmrReadCount.Start();
-                }
+                TickRead();
             };            
             tmrRead.Start();
 
@@ -80,7 +74,7 @@ namespace FishML {
             if ( writeHoursToGo == 0 ) {
                 writeMinutesToGo = myTimes.WriteEvery;
             }
-            System.Windows.Forms.Timer tmrWriteCount = new System.Windows.Forms.Timer();
+            tmrWriteCount = new System.Windows.Forms.Timer();
             tmrWriteCount.Interval = 1000;
             tmrWriteCount.Tick += ( s, e ) => {
                 writeSecsToGo--;
@@ -100,29 +94,64 @@ namespace FishML {
             };
             tmrWriteCount.Start();
 
-            System.Windows.Forms.Timer tmrWrite = new System.Windows.Forms.Timer();
+            tmrWrite = new System.Windows.Forms.Timer();
             tmrWrite.Interval =  myTimes.WriteEvery  * 60 * 1000;
             tmrWrite.Tick += ( s, e ) => {
-                try {
-                    tmrWriteCount.Stop();
-                    tmrWrite.Stop();
-                    lblWriteFile.Text = "Writing File";
-                    WriteXmlFile();
-                } finally {
-                    writeMinutesToGo = 0;
-                    writeHoursToGo = (int)myTimes.WriteEvery / 60;
-                    if ( writeHoursToGo == 0 ) {
-                        writeMinutesToGo = myTimes.WriteEvery;
-                    }
-                    writeSecsToGo = 0;
-                    tmrWriteCount.Start();
-                    tmrWrite.Start();
-                }
+                TickWrite();
             };
             tmrWrite.Start();
-            
+           
         }
 
+        private void TickWrite() {
+            try {
+                tmrWriteCount.Stop();
+                tmrWrite.Stop();
+                lblWriteFile.Text = "Writing File";
+                WriteXmlFile();
+            } finally {
+                writeMinutesToGo = 0;
+                writeHoursToGo = (int)myTimes.WriteEvery / 60;
+                if ( writeHoursToGo == 0 ) {
+                    writeMinutesToGo = myTimes.WriteEvery;
+                }
+                writeSecsToGo = 0;
+                tmrWriteCount.Start();
+                tmrWrite.Start();
+            }
+        }
+
+        private void TickRead() {
+            try {
+                tmrReadCount.Stop();
+                tmrRead.Stop();
+                lblReadFile.Text = "Reading File";
+                ReadXMLFile( myTimes.DataFolderRead );
+            } finally {
+                readMinutesToGo = 0;
+                readHoursToGo = (int)myTimes.ReadEvery / 60;
+                if ( readHoursToGo == 0 ) {
+                    readMinutesToGo = myTimes.ReadEvery;
+                }
+                readSecsToGo = 0;
+                tmrRead.Start();
+                tmrReadCount.Start();
+            }
+        }
+
+
+
+        private void btn1_Click( object sender, EventArgs e ) {
+            try {
+                btn1.Enabled = false;
+                TickRead();
+            } finally {
+                tmrRead.Start();
+                btn1.Enabled = true;
+            }
+            
+        }
+        
         private void WriteXmlFile() {
             string xmlString = string.Empty;
             SqlDataReader rdr = null;
@@ -399,7 +428,7 @@ where GetDate() between d.Dtfrom and Isnull(d.dtto,getdate())
         #region updates
         private void UpdateItem() {
             string cd = readingRow["item_code"].ToString();
-            string dscr = readingRow["item_title"].ToString() + "FF";
+            string dscr = readingRow["item_title"].ToString() ;
             string custom1 = readingRow["item_description"].ToString();
             string custom2 = readingRow["item_titleprint"].ToString();
             int idgrp = omades[readingRow["item_omada"].ToString()];
@@ -458,7 +487,7 @@ where GetDate() between d.Dtfrom and Isnull(d.dtto,getdate())
             }
 
             foreach ( var val in ypoCatigoriesApoArxeio.Where( a => !ipocatigories.ContainsKey( a ) ) ) {
-                string code = DateTime.Now.Ticks.ToString().Substring( 0, 15 );
+                string code = DateTime.Now.Ticks.ToString().Substring( 0, 16 );
                 string catCode = rows.OfType<DataRow>().Where( a => a["item_category2"].ToString() == val ).First()["item_category1"].ToString();
                 int catid = catigories[catCode];
                 ipocatigories[val] = Insertdata( " INSERT INTO AIO_CatSub ( DSCR, Cd, IDCat ) VALUES ( @Dscr, @cd, @IDCat ) ; SELECT IDCatSub from AIO_CatSub where IDCatSub = CAST(scope_identity() AS int);", new object[] { val, code, catid } );
@@ -962,6 +991,57 @@ where not exists (select 1 from I_ItemPort where cd = @cd)
                 dbConn.Close();
             }
         }
+
+        public Image SetImageOpacity( Image image, float opacity ) {
+            Bitmap bmp = new Bitmap( image.Width, image.Height );
+            using ( Graphics g = Graphics.FromImage( bmp ) ) {
+                ColorMatrix matrix = new ColorMatrix();
+                matrix.Matrix33 = opacity;
+                ImageAttributes attributes = new ImageAttributes();
+                attributes.SetColorMatrix( matrix, ColorMatrixFlag.Default,
+                                                  ColorAdjustType.Bitmap );
+                g.DrawImage( image, new Rectangle( 0, 0, bmp.Width, bmp.Height ),
+                                   0, 0, image.Width, image.Height,
+                                   GraphicsUnit.Pixel, attributes );
+            }
+            return bmp;
+        }
+        private void Form1_Load( object sender, EventArgs e ) {
+            
+            BackgroundImage = SetImageOpacity( global::FishML.Properties.Resources._002, 0.25F );
+            btn1.Enabled = true;
+            btn2.Enabled = true;
+        }
+
+        private void btn2_Click( object sender, EventArgs e ) {
+            TickWrite();
+            
+            tmrWrite.Start();
+        }
+
+        private void Form1_Resize( object sender, EventArgs e ) {
+            if ( FormWindowState.Minimized == this.WindowState ) {
+                mynotifyicon.Visible = true;
+                mynotifyicon.ShowBalloonTip( 500 );
+
+                this.Visible = false;
+                this.ShowInTaskbar = false;
+            } else if ( FormWindowState.Normal == this.WindowState ) {
+                mynotifyicon.Visible = false;
+            }
+        }
+
+        private void mynotifyicon_DoubleClick( object sender, EventArgs e ) {
+            if ( FormWindowState.Minimized == this.WindowState ) {
+                this.WindowState = FormWindowState.Normal;
+                this.Visible = true;
+                this.WindowState = FormWindowState.Normal;
+                this.ShowInTaskbar = true;
+                mynotifyicon.Visible = false;
+            }
+
+        }
+
     }
 
 }

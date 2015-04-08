@@ -100,7 +100,7 @@ namespace FishML {
                 TickWrite();
             };
             tmrWrite.Start();
-           
+        //    TickWrite();
         }
 
         private void TickWrite() {
@@ -155,16 +155,16 @@ namespace FishML {
         private void WriteXmlFile() {
             string xmlString = string.Empty;
             SqlDataReader rdr = null;
-            string commandString = @"Select case when Charindex(';', t.spcode) = 0 then t.spcode else Substring(t.spcode, 1,Charindex(';', t.spcode)-1) end item_id,
+            string commandString = @"Select '<?xml version=""1.0"" encoding=""UTF-8""?>' + cast( (select case when Charindex(';', t.spcode) = 0 then t.spcode else Substring(t.spcode, 1,Charindex(';', t.spcode)-1) end item_id,
 case when Charindex(';', t.spcode) = 0 then '' else Substring(t.spcode, Charindex(';', t.spcode)+1, LEN(t.spcode)) end item_subid
 , sum(IsNull(k.Qty,0)) item_pos
 from Ai_prdct p
 join I_Item t on p.idprdct = t.iditem
 join i_stock k on k.IDItem = t.IDItem
-where t.spcode is not null
+where t.spcode is not null and IsNull(t.spcode,'') <> ''
 group by case when Charindex(';', t.spcode) = 0 then t.spcode else Substring(t.spcode, 1,Charindex(';', t.spcode)-1) end ,
 case when Charindex(';', t.spcode) = 0 then '' else Substring(t.spcode, Charindex(';', t.spcode)+1, LEN(t.spcode)) end 
-FOR XML RAW ('item'), ROOT ('items'), ELEMENTS;
+FOR XML RAW ('item'), ROOT ('items'), ELEMENTS) as varchar(max) ) testcol
 ";
             try {
                 // Open the connection
@@ -198,7 +198,7 @@ FOR XML RAW ('item'), ROOT ('items'), ELEMENTS;
             FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite ) ) {
                 XmlDocument xmlDoc = new XmlDocument();
                 
-                xmlDoc.LoadXml( string.Format( "<?xml version='1.0' ?>{0}", xmlString ) );
+                xmlDoc.LoadXml(  xmlString  );
                                 
 
 
@@ -431,6 +431,7 @@ where GetDate() between d.Dtfrom and Isnull(d.dtto,getdate())
             string dscr = readingRow["item_title"].ToString() ;
             string custom1 = readingRow["item_description"].ToString();
             string custom2 = readingRow["item_titleprint"].ToString();
+            string spcode = readingRow["item_id"].ToString() + (readingRow["item_subid"].ToString() == string.Empty ? string.Empty : ";" + readingRow["item_subid"].ToString());
             int idgrp = omades[readingRow["item_omada"].ToString()];
             int idcat = catigories[readingRow["item_category1"].ToString()];
             int idcatsub = ipocatigories[readingRow["item_category2"].ToString()];
@@ -440,8 +441,8 @@ where GetDate() between d.Dtfrom and Isnull(d.dtto,getdate())
             string updString = @"update ai_prdct set idgrp = @idgrp, idmainsplr=@idsplr, idmsr=@idmsr, dscr=@dscr, customdscr1=@custom1, customdscr2=@custom2 where cd=@cd";
             UpdateData( updString, new object[] { idgrp, idsplr, idmsr, dscr, custom1, custom2, cd }, true );
 
-            updString = @"update i_item set idcat = @idcat, idcatSub = @idcatsub from i_item t join ai_prdct p on t.iditem = p.idprdct where p.cd=@cd";
-            UpdateData( updString, new object[] { idcat, idcatsub, cd }, false );
+            updString = @"update i_item set idcat = @idcat, idcatSub = @idcatsub, spcode=@spcode from i_item t join ai_prdct p on t.iditem = p.idprdct where p.cd=@cd";
+            UpdateData( updString, new object[] { idcat, idcatsub, cd, spcode }, false );
         }
 
         public void UpdateData( string updString, object[] paramets , bool forAI_Prdct) {
@@ -463,6 +464,7 @@ where GetDate() between d.Dtfrom and Isnull(d.dtto,getdate())
                     cmd.Parameters.AddWithValue( "@idcat", paramets[0] );
                     cmd.Parameters.AddWithValue( "@idcatsub", paramets[1] );
                     cmd.Parameters.AddWithValue( "@cd", paramets[2] );
+                    cmd.Parameters.AddWithValue( "@spcode", paramets[3] );
                 }
                 conSrc.Open();
                 cmd.ExecuteNonQuery();

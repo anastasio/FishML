@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<data path="C:\datafolder" servername="localhost" databasename="db33" username="sa" password="epsilonsa">
+<data path="C:\datafolder" servername="localhost" databasename="dbUnit_gl" username="sa" password="epsilonsa">
 	<prdctdefaults buy="1" Clng="0" ClngOrder="0" Cmnt="" Conv="1" Discount="0" IDCat="9" IDCatSub="" IDFml="765" IDGrp="18" IDGrpSub="" IDILedg="10" IDMsr="2"
 				   IDVCls="14" LotCls="0" PrdctKind="2" Sale="1" SNCls="0" />
 	<vclsData>

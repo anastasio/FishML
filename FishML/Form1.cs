@@ -195,7 +195,7 @@ FOR XML RAW ('item'), ROOT ('items'), ELEMENTS) as varchar(max) ) testcol
 
             }
             using ( FileStream fs = new FileStream( myTimes.DataFolderWrite,
-            FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite ) ) {
+            FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite ) ) {
                 XmlDocument xmlDoc = new XmlDocument();
                 
                 xmlDoc.LoadXml(  xmlString  );
@@ -478,12 +478,12 @@ where GetDate() between d.Dtfrom and Isnull(d.dtto,getdate())
         #region insert new rows in lookup tables
         private void InsertOther(DataRowCollection rows) {
             foreach ( var val in omadesApoArxeio.Where( a => !omades.ContainsKey( a ) ) ) {
-                string code = DateTime.Now.Ticks.ToString().Substring(0,15);
+                string code = DateTime.Now.Ticks.ToString().Substring(0,16);
                 omades[val] = Insertdata( " INSERT INTO AIO_Grp (Dscr, cd, MustExportTrias ) VALUES ( @Dscr, @cd, 1 ) ; SELECT IDGrp from aio_Grp where idgrp = CAST(scope_identity() AS int);", new object[] { val, code } );
                 Application.DoEvents();
             }
             foreach ( var val in catigoriesApoArxeio.Where( a => !catigories.ContainsKey( a ) ) ) {
-                string code = DateTime.Now.Ticks.ToString().Substring( 0, 15 );
+                string code = DateTime.Now.Ticks.ToString().Substring( 0, 16 );
                 catigories[val] = Insertdata( " INSERT INTO AIO_CAT (Dscr, cd, MustExportTrias ) VALUES ( @Dscr, @cd, 1 ) ; SELECT IDCat from AIO_CAT where IDCat = CAST(scope_identity() AS int);", new object[] { val, code } );
                 Application.DoEvents();
             }
@@ -497,7 +497,7 @@ where GetDate() between d.Dtfrom and Isnull(d.dtto,getdate())
             }
 
            foreach ( var val in monadesMetrisisApoArxeio.Where( a => !monadmetrisis.ContainsKey( a ) ) ) {
-                string code = DateTime.Now.Ticks.ToString().Substring( 0, 15 );
+                string code = DateTime.Now.Ticks.ToString().Substring( 0, 16 );
                 monadmetrisis[val] = Insertdata( "INSERT INTO I_Msr (cd, dscr, Rnd, RndMth, Fmt, Sep, ExportVersion ) VALUES ( @cd, @Dscr, 3, 1, '3', ',', -1 ) ; SELECT IDMsr from I_Msr where IDMsr = CAST(scope_identity() AS int);", new object[] { val, code } );
                 Application.DoEvents();
            }
@@ -530,7 +530,7 @@ select p.dscr, @barcode, p.idprdct , p.IDBarcode, p.IDMsr
 from AI_Prdct p where cd = @cd
 ; update AI_Prdct set IDBarcode = IDBarcode +1 where cd = @cd
 
- ; SELECT IDPrdct, IDBarcode from AI_Barcode where barcode = @barcode;", new object[] { val, cdPrdct } );
+ ;  SELECT convert(varchar, IDPrdct) +';'+convert(varchar,IDBarcode) from AI_Barcode where barcode = @barcode;", new object[] { val, cdPrdct } );
                 Application.DoEvents();
             }
         } 
@@ -736,7 +736,7 @@ from AI_Prdct p where cd = @cd
 
                 // print the CategoryName of each record
                 while ( rdr.Read() ) {
-                    eidiSeTimokatalogoLianikis.Add( Convert.ToInt32(rdr[1]), Convert.ToString( rdr[0] ) );
+                    eidiSeTimokatalogoLianikis[ Convert.ToInt32(rdr[1])] = Convert.ToString( rdr[0] ) ;
                 }
             } finally {
                 // close the reader
@@ -768,7 +768,7 @@ from AI_Prdct p where cd = @cd
 
                 // print the CategoryName of each record
                 while ( rdr.Read() ) {
-                    eidiSeTimokatalogoXondrikis.Add( Convert.ToInt32( rdr[1] ), Convert.ToString( rdr[0] ) );
+                    eidiSeTimokatalogoXondrikis[Convert.ToInt32( rdr[1] )] = Convert.ToString( rdr[0] );
                 }
             } finally {
                 // close the reader
